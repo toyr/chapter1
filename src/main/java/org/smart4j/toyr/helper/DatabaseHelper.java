@@ -10,8 +10,11 @@ import org.slf4j.LoggerFactory;
 import org.smart4j.toyr.util.CollectionUtil;
 import org.smart4j.toyr.util.PropsUtil;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +56,20 @@ public class DatabaseHelper {
 
     }
 
+    public static void executeSqlFile(String filePath) {
+        InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filePath);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        try {
+            String sql;
+            while ((sql = reader.readLine()) != null) {
+                executeUpdate(sql);
+            }
+        } catch (IOException e) {
+            logger.error("execute sql file failure", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * 获取数据库连接
      *
@@ -87,8 +104,6 @@ public class DatabaseHelper {
             }
         }
     }*/
-
-
     public static <T> List<T> queryEntityList(Class<T> entityClass, String sql, Object... params) {
         List<T> entityList;
         try {

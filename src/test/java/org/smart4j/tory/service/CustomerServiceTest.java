@@ -3,9 +3,13 @@ package org.smart4j.tory.service;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.smart4j.toyr.helper.DatabaseHelper;
 import org.smart4j.toyr.model.Customer;
 import org.smart4j.toyr.service.CustomerService;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,8 +28,8 @@ public class CustomerServiceTest {
     }
 
     @Before
-    public void init() {
-        // TODO 初始化数据库
+    public void init() throws Exception {
+        DatabaseHelper.executeSqlFile("sql/customer_init.sql");
     }
 
     @Test
@@ -42,7 +46,7 @@ public class CustomerServiceTest {
     }
 
     @Test
-    public void createCustomerTest() throws  Exception {
+    public void createCustomerTest() throws Exception {
         Map<String, Object> fieldMap = new HashMap<>();
         fieldMap.put("name", "customer100");
         fieldMap.put("contact", "John");
