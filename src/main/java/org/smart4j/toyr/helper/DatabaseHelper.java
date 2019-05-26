@@ -1,13 +1,13 @@
 package org.smart4j.toyr.helper;
 
 import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
-import org.apache.commons.dbutils.wrappers.SqlNullCheckedResultSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.smart4j.toyr.util.PropsUtil;
 
-import java.io.PipedReader;
+import javax.management.relation.RelationNotFoundException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -23,6 +23,8 @@ public class DatabaseHelper {
 
 
     private static final Logger logger = LoggerFactory.getLogger(DatabaseHelper.class);
+
+    private static final ThreadLocal<Connection> CONNECTION_HOLDER = new ThreadLocal<>();
 
     private static final String DRIVER;
     private static final String URL;
@@ -49,43 +51,64 @@ public class DatabaseHelper {
      * @return
      */
     public static Connection getConnection() {
-        Connection connection = null;
-        try {
-            connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-        } catch (SQLException e) {
-            logger.error("get connection failure", e);
+        Connection connection = CONNECTION_HOLDER.get();
+        if (connection == null) {
+            try {
+                connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            } catch (SQLException e) {
+                logger.error("get connection failure", e);
+                throw new RuntimeException(e);
+            } finally {
+                CONNECTION_HOLDER.set(connection);
+            }
         }
         return connection;
     }
 
     /**
      * 关闭数据库连接
-     * @param connection
      */
-    public static void closeConnection(Connection connection) {
+    public static void closeConnection() {
+        Connection connection = CONNECTION_HOLDER.get();
         if (connection != null) {
             try {
                 connection.close();
             } catch (SQLException e) {
                 logger.error("close connection failure", e);
+                throw new RuntimeException(e);
             }
         }
     }
 
     private static final QueryRunner QUERY_RUNNER = new QueryRunner();
 
-    public static <T> List<T> queryEntityList(Class<T> entityClass, Connection connection, String sql, Object... params) {
+    public static <T> List<T> queryEntityList(Class<T> entityClass, String sql, Object... params) {
         List<T> entityList;
         try {
+            Connection connection = getConnection();
             entityList = QUERY_RUNNER.query(connection, sql, new BeanListHandler<T>(entityClass), params);
         } catch (SQLException e) {
             logger.error("query entity list failure", e);
             throw new RuntimeException(e);
         } finally {
-            closeConnection(connection);
+            closeConnection();
         }
 
         return entityList;
+    }
+
+    public static <T> T queryEntity(Class<T> entityClass, String sql, Object... params) {
+        T entity;
+        try {
+            Connection connection = getConnection();
+            entity = QUERY_RUNNER.query(connection, sql, new BeanHandler<T>(entityClass), params);
+        } catch (SQLException e) {
+            logger.error("query entity failure", e);
+            throw new RuntimeException(e);
+        } finally {
+            closeConnection();
+        }
+        return entity;
     }
 
 
