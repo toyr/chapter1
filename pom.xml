@@ -91,7 +91,7 @@
                 <version>3.3</version>
                 <configuration>
                     <source>1.8</source>
-                    <targete>1.8</targete>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
             <!-- Test -->
